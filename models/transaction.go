@@ -1,8 +1,9 @@
 package models
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Transaction struct {
@@ -12,4 +13,6 @@ type Transaction struct {
 	CustomerAccountNumber string
 	CustomerExpireDate    time.Time
 	Status                string
+	Amount                float64
+	TransactionDate       time.Time
 }
