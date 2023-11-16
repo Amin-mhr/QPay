@@ -21,8 +21,8 @@ func NewGormPostgres() *gorm.DB {
 		// Connection configuration
 		dsn := &url.URL{
 			Scheme:   "postgres",
-			User:     url.UserPassword("postgres", "pass123"),
-			Host:     "localhost",
+			User:     url.UserPassword("pg", "pass"),
+			Host:     "172.19.0.2",
 			Path:     "qpay",
 			RawQuery: "sslmode=disable&timezone=" + tehranTimezone.String(),
 		}
