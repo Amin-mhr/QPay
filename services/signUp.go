@@ -5,6 +5,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	echo "github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"net/http"
 	database "signup/database"
@@ -13,7 +14,8 @@ import (
 )
 
 type userInterface interface {
-	CreateUser(user models.User) error
+	RegisterUser(user models.User) error
+	LoginUser(user models.User) error
 }
 
 type JWTCustomClaims struct {
@@ -25,7 +27,7 @@ type JWTCustomClaims struct {
 
 type userInterfaceService struct{}
 
-func (u *userInterfaceService) CreateUser(user models.User) error {
+func (u *userInterfaceService) RegisterUser(user models.User) error {
 	db := database.NewGormPostgres()
 	err := db.Where("email = ?", user.Email).First(&user).Error
 	if err == nil {
@@ -41,7 +43,28 @@ func (u *userInterfaceService) CreateUser(user models.User) error {
 	return err
 }
 
-func CreateHandler(service userInterfaceService) echo.HandlerFunc {
+func (u *userInterfaceService) LoginUser(user models.User) error {
+	db := database.NewGormPostgres()
+	err := db.Where("email = ?", user.Email).First(&user).Error
+	if err != nil {
+		return err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func encryptPassword(password string) string {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return ""
+	}
+	return string(hashedPassword)
+}
+
+func RegisterHandler(service userInterfaceService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var user models.User
 		err := c.Bind(&user)
@@ -51,7 +74,8 @@ func CreateHandler(service userInterfaceService) echo.HandlerFunc {
 		if user.Name == "" || user.Email == "" || user.Password == "" {
 			return c.JSON(http.StatusBadRequest, "please fill all fields")
 		}
-		err = service.CreateUser(user)
+		user.Password = encryptPassword(user.Password)
+		err = service.RegisterUser(user)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -60,6 +84,26 @@ func CreateHandler(service userInterfaceService) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, token)
 	}
 
+}
+
+func LoginHandler(service userInterfaceService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var user models.User
+		err := c.Bind(&user)
+		if err != nil {
+			return c.JSON(http.StatusNotFound, err.Error())
+		}
+		if user.Email == "" || user.Password == "" {
+			return c.JSON(http.StatusBadRequest, "please fill all fields")
+		}
+		err = service.LoginUser(user)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		token := GenerateJWT(user)
+		setCookie(c, token)
+		return c.JSON(http.StatusOK, token)
+	}
 }
 
 func GenerateJWT(user models.User) string {
@@ -120,6 +164,7 @@ func Authentication(c echo.Context) error {
 func SignUpRoutes(server *echo.Echo) {
 	server.Use(middleware.Logger())
 	server.Use(middleware.Recover())
-	server.POST("/signup", CreateHandler(userInterfaceService{}))
+	server.POST("/signup", RegisterHandler(userInterfaceService{}))
+	server.POST("/login", LoginHandler(userInterfaceService{}))
 	server.GET("/home", Authentication, authMiddleware)
 }

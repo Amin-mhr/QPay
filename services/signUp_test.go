@@ -22,7 +22,7 @@ func startServer() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.POST("/signup", CreateHandler(userInterfaceService{}))
+	e.POST("/signup", RegisterHandler(userInterfaceService{}))
 	e.GET("/home", Authentication, authMiddleware)
 	err := e.Start("localhost:6060")
 	if err != nil {
@@ -51,7 +51,7 @@ func TestCreateUser(t *testing.T) {
 		Email:     "Qpayfake@gmail.com",
 		Password:  "password",
 	}
-	err := service.CreateUser(user)
+	err := service.RegisterUser(user)
 	assert.NoError(t, err)
 }
 
@@ -62,7 +62,7 @@ func TestCreateHandler2(t *testing.T) {
 		Email:     "Qpay@gmail.com",
 		Password:  "password",
 	}
-	err := service.CreateUser(user)
+	err := service.RegisterUser(user)
 	assert.Error(t, err)
 }
 
