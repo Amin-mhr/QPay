@@ -45,11 +45,12 @@ func (u *userInterfaceService) RegisterUser(user models.User) error {
 
 func (u *userInterfaceService) LoginUser(user models.User) error {
 	db := database.NewGormPostgres()
-	err := db.Where("email = ?", user.Email).First(&user).Error
+	var userDB models.User
+	err := db.Where("email = ?", user.Email).First(&userDB).Error
 	if err != nil {
 		return err
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(userDB.Password), []byte(user.Password))
 	if err != nil {
 		return err
 	}
