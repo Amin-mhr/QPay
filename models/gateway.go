@@ -2,10 +2,15 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"time"
 )
 
 type Gateway struct {
 	gorm.Model
+	Blocked          bool
+	AlwaysBlocked    bool
+	BlockTime        time.Time
+	UnblockTime      time.Time
 	UrlAddress       string
 	UserID           uint
 	User             User `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
