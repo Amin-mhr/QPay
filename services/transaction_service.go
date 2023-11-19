@@ -1,7 +1,8 @@
-package main
+package services
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -9,6 +10,10 @@ import (
 )
 
 type TransactionStatus string
+
+type Message struct {
+	Message string
+}
 
 const (
 	StatusUncompleted        TransactionStatus = "Uncompleted"
@@ -25,6 +30,26 @@ const (
 	StatusAlreadyConfirmed   TransactionStatus = "alreadyConfirmed"
 )
 
+var validStatuses = map[TransactionStatus]bool{
+	StatusUncompleted:        true,
+	StatusUnsuccessful:       true,
+	StatusFailed:             true,
+	StatusBlocked:            true,
+	StatusRefundToPayer:      true,
+	StatusSystemRefund:       true,
+	StatusCanceled:           true,
+	StatusRedirected:         true,
+	StatusPending:            true,
+	StatusConfirmed:          true,
+	StatusDepositedRecipient: true,
+	StatusAlreadyConfirmed:   true,
+}
+
+func (s TransactionStatus) isValid() bool {
+	_, exist := validStatuses[s]
+	return exist
+}
+
 type Transaction struct {
 	ID                    uint              `gorm:"primary_key"`
 	GatewayId             uint              `gorm:"primary_key"`
@@ -35,19 +60,8 @@ type Transaction struct {
 }
 
 type TransactionServiceInterface interface {
-	UncompletedList() ([]*Transaction, error)
-	UnsuccessfulList() ([]*Transaction, error)
-	FailedList() ([]*Transaction, error)
-	BlockedList() ([]*Transaction, error)
-	RefundToPayerList() ([]*Transaction, error)
-	//SystemRefundList() ([]*Transaction, error)
-	//CanceledList() ([]*Transaction, error)
-	//RedirectedList() ([]*Transaction, error)
-	//PendingList() ([]*Transaction, error)
-	//ConfirmedList() ([]*Transaction, error)
-	//DepositedToRecipientList() ([]*Transaction, error)
-	//AlreadyConfirmedList() ([]*Transaction, error)
-	//List() ([]*Transaction, error)
+	List(status string) ([]*Transaction, error)
+	FilterTransactions(date *time.Time, amount *float64) ([]*Transaction, error)
 }
 
 type transactionService struct {
@@ -58,7 +72,7 @@ func NewTransactionService(db *gorm.DB) TransactionServiceInterface {
 	return &transactionService{db: db}
 }
 
-func (t *transactionService) UncompletedList() ([]*Transaction, error) {
+func (t *transactionService) List(status string) ([]*Transaction, error) {
 	var transactions []*Transaction
 	result := t.db.Where("status= ?", StatusUncompleted).Find(&transactions)
 	if result.Error != nil {
@@ -67,97 +81,79 @@ func (t *transactionService) UncompletedList() ([]*Transaction, error) {
 	return transactions, nil
 }
 
-func (t *transactionService) UnsuccessfulList() ([]*Transaction, error) {
+func (t *transactionService) FilterTransactions(date *time.Time, amount *float64) ([]*Transaction, error) {
 	var transactions []*Transaction
-	result := t.db.Where("status= ?", StatusUnsuccessful).Find(&transactions)
-	if result.Error != nil {
-		return nil, result.Error
+	query := t.db.Model(&Transaction{})
+	if date != nil {
+		query = query.Where("transaction_date = ?", date)
 	}
+
+	if amount != nil {
+		query = query.Where("amount = ?", amount)
+	}
+
+	err := query.Find(&transactions).Error
+	if err != nil {
+		return nil, err
+	}
+
 	return transactions, nil
 }
 
-func (t *transactionService) FailedList() ([]*Transaction, error) {
-	var transactions []*Transaction
-	result := t.db.Where("status= ?", StatusFailed).Find(&transactions)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return transactions, nil
-}
-
-func (t *transactionService) BlockedList() ([]*Transaction, error) {
-	var transactions []*Transaction
-	result := t.db.Where("status= ?", StatusBlocked).Find(&transactions)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return transactions, nil
-}
-
-func (t *transactionService) RefundToPayerList() ([]*Transaction, error) {
-	var transactions []*Transaction
-	result := t.db.Where("status= ?", StatusRefundToPayer).Find(&transactions)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return transactions, nil
-}
-
-func uncompletedListHandler(service TransactionServiceInterface) echo.HandlerFunc {
+func listHandler(service TransactionServiceInterface) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		transactions, err := service.UncompletedList()
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
+		status := TransactionStatus(c.QueryParam("status"))
+		if status.isValid() || status == "" {
+			transactions, err := service.List(string(status))
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, err.Error())
+			}
+			return c.JSON(http.StatusOK, transactions)
+		} else {
+			return c.JSON(http.StatusBadRequest, Message{Message: "The status is invalid"})
 		}
-		return c.JSON(http.StatusOK, transactions)
 	}
 }
 
-func unsuccessfulListHandler(service TransactionServiceInterface) echo.HandlerFunc {
+func filterTransactionHandler(service TransactionServiceInterface) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		transactions, err := service.UnsuccessfulList()
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		return c.JSON(http.StatusOK, transactions)
-	}
-}
+		var dateFilter *time.Time
+		var amountFilter *float64
 
-func failedListHandler(service TransactionServiceInterface) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		transactions, err := service.FailedList()
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
+		dateString := c.QueryParam("date")
+		if dateString != "" {
+			date, dateErr := time.Parse("2006-01-02 15:04:05", dateString)
+			if dateErr == nil {
+				dateFilter = &date
+			} else {
+				return c.JSON(http.StatusBadRequest, Message{Message: "The date value is invalid"})
+			}
 		}
-		return c.JSON(http.StatusOK, transactions)
-	}
-}
 
-func blockedListHandler(service TransactionServiceInterface) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		transactions, err := service.BlockedList()
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
+		amountString := c.QueryParam("amount")
+		if amountString != "" {
+			amount, amountErr := strconv.ParseFloat(amountString, 64)
+			if amountErr == nil {
+				amountFilter = &amount
+			} else {
+				return c.JSON(http.StatusBadRequest, Message{Message: "The amount is invalid"})
+			}
 		}
-		return c.JSON(http.StatusOK, transactions)
-	}
-}
 
-func refundToPayerListHandler(service TransactionServiceInterface) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		transactions, err := service.RefundToPayerList()
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
+		if dateString != "" || amountString != "" {
+			transactions, err := service.FilterTransactions(dateFilter, amountFilter)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, err.Error())
+			}
+			return c.JSON(http.StatusOK, transactions)
+		} else {
+			return c.JSON(http.StatusBadRequest, Message{Message: "The filter is invalid"})
 		}
-		return c.JSON(http.StatusOK, transactions)
 	}
 }
 
 func TransactionRoutes(server *echo.Echo, db *gorm.DB) {
 	transactionService := NewTransactionService(db)
-	server.Get("/transaction/uncompleted", uncompletedListHandler(transactionService))
-	server.Get("/transaction/unsuccessful", unsuccessfulListHandler(transactionService))
-	server.Get("/transaction/failed", failedListHandler(transactionService))
-	server.Get("/transaction/blocked", blockedListHandler(transactionService))
-	server.Get("/transaction/refund-to-payer", refundToPayerListHandler(transactionService))
+	server.GET("/transaction/list", listHandler(transactionService))
+	server.GET("/transaction/filter", filterTransactionHandler(transactionService))
 }
