@@ -71,6 +71,18 @@ func (t *transactionService) FilterTransactions(date *time.Time, amount *float64
 	return transactions, nil
 }
 
+// ListHandler handles the listing of transactions.
+// @Summary List transactions
+// @Description Retrieves a list of transactions based on their status.
+// @Tags transactions
+// @Accept  json
+// @Produce  json
+// @Param status query string false "Status of the transactions to filter by"
+// @Success 200 {array} models.Transaction "List of transactions"
+// @Failure 400 {object} Message "Invalid status"
+// @Failure 500 {object} Message "Internal server error"
+// @Router /transactions [get]
+
 func ListHandler(service TransactionServiceInterface) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		status := TransactionStatus(c.QueryParam("status"))
@@ -85,6 +97,19 @@ func ListHandler(service TransactionServiceInterface) echo.HandlerFunc {
 		}
 	}
 }
+
+// FilterTransactionHandler handles the filtering of transactions.
+// @Summary Filter transactions
+// @Description Filters transactions based on date and/or amount.
+// @Tags transactions
+// @Accept  json
+// @Produce  json
+// @Param date query string false "Date to filter transactions (format: yyyy-MM-dd HH:mm:ss)"
+// @Param amount query float false "Amount to filter transactions"
+// @Success 200 {array} models.Transaction "Filtered list of transactions"
+// @Failure 400 {object} Message "Invalid date or amount filter"
+// @Failure 500 {object} Message "Internal server error"
+// @Router /transactions/filter [get]
 
 func FilterTransactionHandler(service TransactionServiceInterface) echo.HandlerFunc {
 	return func(c echo.Context) error {
