@@ -100,7 +100,7 @@ func (t *transactionService) FilterTransactions(date *time.Time, amount *float64
 	return transactions, nil
 }
 
-func listHandler(service TransactionServiceInterface) echo.HandlerFunc {
+func ListHandler(service TransactionServiceInterface) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		status := TransactionStatus(c.QueryParam("status"))
 		if status.isValid() || status == "" {
@@ -115,7 +115,7 @@ func listHandler(service TransactionServiceInterface) echo.HandlerFunc {
 	}
 }
 
-func filterTransactionHandler(service TransactionServiceInterface) echo.HandlerFunc {
+func FilterTransactionHandler(service TransactionServiceInterface) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var dateFilter *time.Time
 		var amountFilter *float64
@@ -150,10 +150,4 @@ func filterTransactionHandler(service TransactionServiceInterface) echo.HandlerF
 			return c.JSON(http.StatusBadRequest, Message{Message: "The filter is invalid"})
 		}
 	}
-}
-
-func TransactionRoutes(server *echo.Echo, db *gorm.DB) {
-	transactionService := NewTransactionService(db)
-	server.GET("/transaction/list", listHandler(transactionService))
-	server.GET("/transaction/filter", filterTransactionHandler(transactionService))
 }

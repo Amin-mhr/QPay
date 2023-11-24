@@ -17,12 +17,12 @@ func RandStringBytes(n int) string {
 	return string(b)
 }
 
+// handle returns
 func PostGateway(gateway models.Gateway) (int, error) {
 	db := NewGormPostgres()
 	gateway.CreatedAt = time.Now()
 	gateway.UrlAddress = RandStringBytes(50)
 	result := db.Create(&gateway)
-
 	if result.Error != nil {
 		return http.StatusBadRequest, result.Error
 	}

@@ -45,7 +45,7 @@ func HandleBuyGateway(c echo.Context) error {
 	}
 	if result != http.StatusOK {
 		msg["message"] = "problem inserting gateway to database"
-		return c.JSON(result, msg)
+		return c.JSON(http.StatusBadRequest, msg)
 	}
 	return nil
 }

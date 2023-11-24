@@ -23,7 +23,7 @@ func startServer() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.POST("/signup", RegisterHandler(userInterfaceService{}))
-	e.GET("/home", Authentication, authMiddleware)
+	e.GET("/home", Authentication, AuthMiddleware)
 	err := e.Start("localhost:6060")
 	if err != nil {
 		return

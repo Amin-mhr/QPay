@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-type userInterface interface {
+type UserInterface interface {
 	RegisterUser(user models.User) error
 	LoginUser(user models.User) error
 }
@@ -25,9 +25,9 @@ type JWTCustomClaims struct {
 	jwt.StandardClaims
 }
 
-type userInterfaceService struct{}
+type UserInterfaceService struct{}
 
-func (u *userInterfaceService) RegisterUser(user models.User) error {
+func (u *UserInterfaceService) RegisterUser(user models.User) error {
 	db := database.NewGormPostgres()
 	err := db.Where("email = ?", user.Email).First(&user).Error
 	if err == nil {
@@ -43,7 +43,7 @@ func (u *userInterfaceService) RegisterUser(user models.User) error {
 	return err
 }
 
-func (u *userInterfaceService) LoginUser(user models.User) error {
+func (u *UserInterfaceService) LoginUser(user models.User) error {
 	db := database.NewGormPostgres()
 	var userDB models.User
 	err := db.Where("email = ?", user.Email).First(&userDB).Error
@@ -65,7 +65,7 @@ func encryptPassword(password string) string {
 	return string(hashedPassword)
 }
 
-func RegisterHandler(service userInterfaceService) echo.HandlerFunc {
+func RegisterHandler(service UserInterfaceService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var user models.User
 		err := c.Bind(&user)
@@ -87,7 +87,7 @@ func RegisterHandler(service userInterfaceService) echo.HandlerFunc {
 
 }
 
-func LoginHandler(service userInterfaceService) echo.HandlerFunc {
+func LoginHandler(service UserInterfaceService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var user models.User
 		err := c.Bind(&user)
@@ -132,7 +132,7 @@ func setCookie(c echo.Context, token string) {
 	c.SetCookie(cookie)
 }
 
-func authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cookie, err := c.Cookie("jwt-token")
 		if err != nil {
@@ -165,7 +165,7 @@ func Authentication(c echo.Context) error {
 func SignUpRoutes(server *echo.Echo) {
 	server.Use(middleware.Logger())
 	server.Use(middleware.Recover())
-	server.POST("/signup", RegisterHandler(userInterfaceService{}))
-	server.POST("/login", LoginHandler(userInterfaceService{}))
-	server.GET("/home", Authentication, authMiddleware)
+	server.POST("/signup", RegisterHandler(UserInterfaceService{}))
+	server.POST("/login", LoginHandler(UserInterfaceService{}))
+	server.GET("/home", Authentication, AuthMiddleware)
 }

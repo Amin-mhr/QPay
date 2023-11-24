@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (a *adminInterfaceService) LoginAdmin(admin models.Admin) error {
+func (a *AdminInterfaceService) LoginAdmin(admin models.Admin) error {
 	var adminDB models.Admin
 	db := database.NewGormPostgres()
 	err := db.Where("email = ?", admin.Email).First(&adminDB).Error
@@ -24,7 +24,7 @@ func (a *adminInterfaceService) LoginAdmin(admin models.Admin) error {
 	return nil
 }
 
-func LoginAdminHandler(service adminInterfaceService) echo.HandlerFunc {
+func LoginAdminHandler(service AdminInterfaceService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var admin models.Admin
 		err := c.Bind(&admin)

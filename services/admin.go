@@ -8,15 +8,15 @@ import (
 	"qpay/models"
 )
 
-type adminInterface interface {
+type AdminInterface interface {
 	BlockAllGateWay(user models.User, BlockType string) error
 	BlockOneGateWay(gateway models.Gateway, BlockType string) error
 	UnblockGateWay(gateway models.Gateway) error
 }
 
-type adminInterfaceService struct{}
+type AdminInterfaceService struct{}
 
-func (a *adminInterfaceService) BlockAllGateWay(user models.User, BlockType string) error {
+func (a *AdminInterfaceService) BlockAllGateWay(user models.User, BlockType string) error {
 	db := database.NewGormPostgres()
 	var gateways []models.Gateway
 	err := db.Where("user_id = ?", user.ID).Find(&gateways).Error
@@ -45,7 +45,7 @@ func (a *adminInterfaceService) BlockAllGateWay(user models.User, BlockType stri
 	return nil
 }
 
-func (a *adminInterfaceService) BlockOneGateWay(gateway models.Gateway, BlockType string) error {
+func (a *AdminInterfaceService) BlockOneGateWay(gateway models.Gateway, BlockType string) error {
 	db := database.NewGormPostgres()
 	if BlockType == "block" {
 		if gateway.Blocked == true {
@@ -68,7 +68,7 @@ func (a *adminInterfaceService) BlockOneGateWay(gateway models.Gateway, BlockTyp
 
 }
 
-func (a *adminInterfaceService) UnblockGateWay(gateway models.Gateway) error {
+func (a *AdminInterfaceService) UnblockGateWay(gateway models.Gateway) error {
 	db := database.NewGormPostgres()
 	if gateway.Blocked == false {
 		return echo.NewHTTPError(http.StatusBadRequest, "gateway is not blocked")
@@ -80,7 +80,7 @@ func (a *adminInterfaceService) UnblockGateWay(gateway models.Gateway) error {
 	return nil
 }
 
-func BlockOneGateWayHandler(service adminInterfaceService) echo.HandlerFunc {
+func BlockOneGateWayHandler(service AdminInterfaceService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		BlockType := c.QueryParam("blockType")
 		var gateway models.Gateway
@@ -98,7 +98,7 @@ func BlockOneGateWayHandler(service adminInterfaceService) echo.HandlerFunc {
 	}
 }
 
-func BlockAllGateWayHandler(service adminInterfaceService) echo.HandlerFunc {
+func BlockAllGateWayHandler(service AdminInterfaceService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		BlockType := c.QueryParam("blockType")
 		var user models.User
@@ -119,8 +119,8 @@ func BlockAllGateWayHandler(service adminInterfaceService) echo.HandlerFunc {
 func AdminRoutes(server *echo.Echo) {
 	server.Use(middleware.Logger())
 	server.Use(middleware.Recover())
-	server.POST("/admin/login", LoginAdminHandler(adminInterfaceService{}))
-	server.POST("/admin/blockOneGateway", BlockOneGateWayHandler(adminInterfaceService{}))
-	server.POST("/admin/blockAllGateways", BlockAllGateWayHandler(adminInterfaceService{}))
-	server.GET("/admin", Authentication, authMiddleware)
+	server.POST("/admin/login", LoginAdminHandler(AdminInterfaceService{}))
+	server.POST("/admin/blockOneGateway", BlockOneGateWayHandler(AdminInterfaceService{}))
+	server.POST("/admin/blockAllGateways", BlockAllGateWayHandler(AdminInterfaceService{}))
+	server.GET("/admin", Authentication, AuthMiddleware)
 }
