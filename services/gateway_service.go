@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"qpay/database"
 	"qpay/models"
+	"strconv"
 )
 
 // For gateway which are not specific add name to last name and put it as gateway
@@ -48,4 +49,22 @@ func HandleBuyGateway(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, msg)
 	}
 	return nil
+}
+
+func HandleChangeAccount(c echo.Context) error {
+	msg := make(map[string]string)
+	_ = msg
+	gatewayId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return err
+	}
+	gatewayAccount := c.Param("account")
+
+	result, err := database.UpdateGatewayAccount(gatewayId, gatewayAccount)
+	if result != http.StatusOK {
+		msg["message"] = "problem changing gateway account number"
+		return c.JSON(http.StatusBadRequest, msg)
+	}
+	msg["message"] = "gateway account changed"
+	return c.JSON(http.StatusOK, msg)
 }

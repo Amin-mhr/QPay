@@ -39,3 +39,13 @@ func PostCustomUrlGateway(getaway models.Gateway) (int, error) {
 	}
 	return http.StatusOK, nil
 }
+
+func UpdateGatewayAccount(gatewayId int, gatewayAccountNumber string) (int, error) {
+	db := NewGormPostgres()
+	err := db.Model(&models.Gateway{}).Where("id = ?", gatewayId).Update("account_id", gatewayAccountNumber)
+	//err := db.Model(db.First(gatewayId).Update("account_id", gatewayAccountNumber))
+	if err.Error != nil {
+		return http.StatusBadRequest, err.Error
+	}
+	return http.StatusOK, nil
+}
