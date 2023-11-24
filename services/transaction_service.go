@@ -2,6 +2,7 @@ package services
 
 import (
 	"net/http"
+	"qpay/models"
 	"strconv"
 	"time"
 
@@ -15,53 +16,23 @@ type Message struct {
 	Message string
 }
 
-const (
-	StatusUncompleted        TransactionStatus = "Uncompleted"
-	StatusUnsuccessful       TransactionStatus = "unsuccessful"
-	StatusFailed             TransactionStatus = "failed"
-	StatusBlocked            TransactionStatus = "blocked"
-	StatusRefundToPayer      TransactionStatus = "refund"
-	StatusSystemRefund       TransactionStatus = "systemRefund"
-	StatusCanceled           TransactionStatus = "canceled"
-	StatusRedirected         TransactionStatus = "redirected"
-	StatusPending            TransactionStatus = "pending"
-	StatusConfirmed          TransactionStatus = "confirmed"
-	StatusDepositedRecipient TransactionStatus = "depositedRecipient"
-	StatusAlreadyConfirmed   TransactionStatus = "alreadyConfirmed"
-)
-
-var validStatuses = map[TransactionStatus]bool{
-	StatusUncompleted:        true,
-	StatusUnsuccessful:       true,
-	StatusFailed:             true,
-	StatusBlocked:            true,
-	StatusRefundToPayer:      true,
-	StatusSystemRefund:       true,
-	StatusCanceled:           true,
-	StatusRedirected:         true,
-	StatusPending:            true,
-	StatusConfirmed:          true,
-	StatusDepositedRecipient: true,
-	StatusAlreadyConfirmed:   true,
-}
-
 func (s TransactionStatus) isValid() bool {
-	_, exist := validStatuses[s]
+	_, exist := models.ValidStatuses[models.TransactionStatus(s)]
 	return exist
 }
 
-type Transaction struct {
-	ID                    uint              `gorm:"primary_key"`
-	GatewayId             uint              `gorm:"primary_key"`
-	CustomerAccountNumber int64             `gorm:"type:int"`
-	CustomerExpireDate    time.Time         `gorm:"type:date"`
-	Status                TransactionStatus `gorm:"type:string"`
-	TransactionDate       time.Time         `gorm:"type:timestamp"`
-}
+//type Transaction struct {
+//	ID                    uint              `gorm:"primary_key"`
+//	GatewayId             uint              `gorm:"primary_key"`
+//	CustomerAccountNumber int64             `gorm:"type:int"`
+//	CustomerExpireDate    time.Time         `gorm:"type:date"`
+//	Status                TransactionStatus `gorm:"type:string"`
+//	TransactionDate       time.Time         `gorm:"type:timestamp"`
+//}
 
 type TransactionServiceInterface interface {
-	List(status string) ([]*Transaction, error)
-	FilterTransactions(date *time.Time, amount *float64) ([]*Transaction, error)
+	List(status string) ([]*models.Transaction, error)
+	FilterTransactions(date *time.Time, amount *float64) ([]*models.Transaction, error)
 }
 
 type transactionService struct {
@@ -72,18 +43,18 @@ func NewTransactionService(db *gorm.DB) TransactionServiceInterface {
 	return &transactionService{db: db}
 }
 
-func (t *transactionService) List(status string) ([]*Transaction, error) {
-	var transactions []*Transaction
-	result := t.db.Where("status= ?", StatusUncompleted).Find(&transactions)
+func (t *transactionService) List(status string) ([]*models.Transaction, error) {
+	var transactions []*models.Transaction
+	result := t.db.Where("status= ?", models.StatusUncompleted).Find(&transactions)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 	return transactions, nil
 }
 
-func (t *transactionService) FilterTransactions(date *time.Time, amount *float64) ([]*Transaction, error) {
-	var transactions []*Transaction
-	query := t.db.Model(&Transaction{})
+func (t *transactionService) FilterTransactions(date *time.Time, amount *float64) ([]*models.Transaction, error) {
+	var transactions []*models.Transaction
+	query := t.db.Model(&models.Transaction{})
 	if date != nil {
 		query = query.Where("transaction_date = ?", date)
 	}
