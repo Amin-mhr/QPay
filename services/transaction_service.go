@@ -2,6 +2,7 @@ package services
 
 import (
 	"net/http"
+	"qpay/database"
 	"qpay/models"
 	"strconv"
 	"time"
@@ -33,6 +34,7 @@ func (s TransactionStatus) isValid() bool {
 type TransactionServiceInterface interface {
 	List(status string) ([]*models.Transaction, error)
 	FilterTransactions(date *time.Time, amount *float64) ([]*models.Transaction, error)
+	HandleCreateTransaction(t transactionService) string
 }
 
 type transactionService struct {
@@ -120,5 +122,17 @@ func FilterTransactionHandler(service TransactionServiceInterface) echo.HandlerF
 		} else {
 			return c.JSON(http.StatusBadRequest, Message{Message: "The filter is invalid"})
 		}
+	}
+}
+
+func HandleCreateTransaction(service TransactionServiceInterface) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var transaction models.Transaction
+		err := (&echo.DefaultBinder{}).BindBody(c, &transaction)
+		if err != nil {
+			return err
+		}
+		database.PostTransaction(transaction)
+		return c.JSON(http.StatusOK, transaction)
 	}
 }

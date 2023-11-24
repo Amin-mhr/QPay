@@ -3,26 +3,27 @@ package services
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"qpay/database"
 	"qpay/models"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/stretchr/testify/assert"
 )
 
 var users []models.User
-var service userInterfaceService
+var service UserInterface
 var serverDoOnce sync.Once
 
 func startServer() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.POST("/signup", RegisterHandler(userInterfaceService{}))
+	e.POST("/signup", RegisterHandler(UserInterfaceService{}))
 	e.GET("/home", Authentication, AuthMiddleware)
 	err := e.Start("localhost:6060")
 	if err != nil {
