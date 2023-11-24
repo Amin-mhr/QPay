@@ -34,7 +34,7 @@ func (s TransactionStatus) isValid() bool {
 type TransactionServiceInterface interface {
 	List(status string) ([]*models.Transaction, error)
 	FilterTransactions(date *time.Time, amount *float64) ([]*models.Transaction, error)
-	HandleCreateTransaction(t transactionService) string
+	Create() (models.Transaction, error)
 }
 
 type transactionService struct {
@@ -71,6 +71,16 @@ func (t *transactionService) FilterTransactions(date *time.Time, amount *float64
 	}
 
 	return transactions, nil
+}
+
+func (t *transactionService) Create() (models.Transaction, error) {
+	var transaction models.Transaction
+	err := database.PostTransaction(transaction, t.db)
+	if err != nil {
+		return models.Transaction{}, err
+	}
+
+	return transaction, nil
 }
 
 func ListHandler(service TransactionServiceInterface) echo.HandlerFunc {
@@ -127,12 +137,10 @@ func FilterTransactionHandler(service TransactionServiceInterface) echo.HandlerF
 
 func HandleCreateTransaction(service TransactionServiceInterface) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var transaction models.Transaction
-		err := (&echo.DefaultBinder{}).BindBody(c, &transaction)
+		transactions, err := service.Create()
 		if err != nil {
-			return err
+			return c.JSON(http.StatusBadRequest, Message{Message: "Transaction is invalid"})
 		}
-		database.PostTransaction(transaction)
-		return c.JSON(http.StatusOK, transaction)
+		return c.JSON(http.StatusOK, transactions)
 	}
 }
