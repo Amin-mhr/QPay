@@ -8,8 +8,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"net/http"
-	database "signup/database"
-	"signup/models"
+	"qpay/database"
+	"qpay/models"
 	"time"
 )
 

@@ -11,7 +11,7 @@ type Gateway struct {
 	AlwaysBlocked    bool
 	BlockTime        time.Time
 	UnblockTime      time.Time
-	UrlAddress       string
+	UrlAddress       string `gorm:"unique"`
 	UserID           uint
 	User             User `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	AccountID        uint

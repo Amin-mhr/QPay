@@ -2,7 +2,7 @@ package database
 
 import (
 	"gorm.io/gorm"
-	"my-part/models"
+	"qpay/models"
 )
 
 func Migrate(db *gorm.DB) {

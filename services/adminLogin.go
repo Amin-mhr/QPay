@@ -5,8 +5,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
-	"signup/database"
-	"signup/models"
+	"qpay/database"
+	"qpay/models"
 	"time"
 )
 

@@ -2,8 +2,7 @@ package main
 
 import (
 	"github.com/labstack/echo/v4"
-	"my-part/database"
-	"my-part/services"
+	"qpay/database"
 )
 
 func main() {
@@ -11,7 +10,7 @@ func main() {
 	database.Migrate(db)
 
 	server := echo.New()
-	server.POST("/gateway", services.HandleCreateGateway)
+	GatewayRouts(server)
 
 	server.Logger.Fatal(server.Start(":8000"))
 
