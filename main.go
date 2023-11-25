@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"qpay/database"
+	_ "qpay/docs"
 	"qpay/routes"
 )
 
